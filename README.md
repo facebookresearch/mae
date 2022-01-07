@@ -23,9 +23,14 @@ This is a PyTorch/GPU re-implementation of the paper [Masked Autoencoders Are Sc
 
 ### Catalog
 
+- [x] Huggingface Spaces Web demo
 - [x] Visualization demo
 - [x] Pre-trained checkpoints + fine-tuning code
 - [x] Pre-training code
+
+### Huggingface Spaces Web demo
+
+Integrated into [Huggingface Spaces 🤗](https://huggingface.co/spaces) using [Gradio](https://github.com/gradio-app/gradio). Try it out [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/akhaliq/mae)
 
 ### Visualization demo
 
