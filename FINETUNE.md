@@ -124,10 +124,54 @@ OMP_NUM_THREADS=1 python -m torch.distributed.launch --nproc_per_node=8 main_fin
 ```
 - Here the effective batch size is 32 (`batch_size` per gpu) * 4 (`accum_iter`) * 8 (gpus) = 1024. `--accum_iter 4` simulates 4 nodes.
 
-### Notes
+#### Notes
 
 - The [pre-trained models we provide](https://github.com/fairinternal/mae/#pre-trained-checkpoints) are trained with *normalized* pixels `--norm_pix_loss` (1600 epochs, Table 3 in paper). The fine-tuning hyper-parameters are slightly different from the default baseline using *unnormalized* pixels.
 
 - The original MAE implementation was in TensorFlow+TPU with no explicit mixed precision. This re-implementation is in PyTorch+GPU with automatic mixed precision (`torch.cuda.amp`). We have observed different numerical behavior between the two platforms. In this repo, we use `--global_pool` for fine-tuning; using `--cls_token` performs similarly, but there is a chance of producing NaN when fine-tuning ViT-Huge in GPUs. We did not observe this issue in TPUs. Turning off amp could solve this issue, but is slower.
 
 - Here we use RandErase following DeiT: `--reprob 0.25`. Its effect is smaller than random variance.
+
+### Linear Probing
+
+Run the following on 4 nodes with 8 GPUs each:
+```
+python submitit_linprobe.py \
+    --job_dir ${JOB_DIR} \
+    --nodes 4 \
+    --batch_size 512 \
+    --model vit_base_patch16 --cls_token \
+    --finetune ${PRETRAIN_CHKPT} \
+    --epochs 90 \
+    --blr 0.1 \
+    --weight_decay 0.0 \
+    --dist_eval --data_path ${IMAGENET_DIR}
+```
+- Here the effective batch size is 512 (`batch_size` per gpu) * 4 (`nodes`) * 8 (gpus per node) = 16384.
+- `blr` is the base learning rate. The actual `lr` is computed by the [linear scaling rule](https://arxiv.org/abs/1706.02677): `lr` = `blr` * effective batch size / 256.
+- Training time is ~2h20m for 90 epochs in 32 V100 GPUs.
+- To run single-node training, follow the instruction in fine-tuning.
+
+To train ViT-Large or ViT-Huge, set `--model vit_large_patch16` or `--model vit_huge_patch14`. It is sufficient to train 50 epochs `--epochs 50`.
+
+This PT/GPU code produces *better* results for ViT-L/H (see the table below). This is likely caused by the system difference between TF and PT.
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom"></th>
+<th valign="bottom">ViT-Base</th>
+<th valign="bottom">ViT-Large</th>
+<th valign="bottom">ViT-Huge</th>
+<!-- TABLE BODY -->
+<tr><td align="left">paper (TF/TPU)</td>
+<td align="center">68.0</td>
+<td align="center">75.8</td>
+<td align="center">76.6</td>
+</tr>
+<tr><td align="left">this repo (PT/GPU)</td>
+<td align="center">67.8</td>
+<td align="center">76.0</td>
+<td align="center">77.2</td>
+</tr>
+</tbody></table>

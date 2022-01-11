@@ -20,4 +20,4 @@ python submitit_pretrain.py \
 - The exact same hyper-parameters and configs (initialization, augmentation, etc.) are used as our TF/TPU implementation. In our sanity checks, this PT/GPU re-implementation can reproduce the TF/TPU results within reasonable random variation. We get 85.5% [fine-tuning](FINETUNE.md) accuracy by pre-training ViT-Large for 800 epochs (85.4% in paper Table 1d with TF/TPU).
 - Training time is ~42h in 64 V100 GPUs (800 epochs).
 
-To train ViT-Base or ViT-Huge, set `--model vit_base_patch16` or `--model vit_huge_patch14`.
+To train ViT-Base or ViT-Huge, set `--model mae_vit_base_patch16` or `--model mae_vit_huge_patch14`.
