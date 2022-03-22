@@ -151,6 +151,10 @@ By fine-tuning these pre-trained models, we rank #1 in these classification task
 
 The pre-training instruction is in [PRETRAIN.md](PRETRAIN.md).
 
+### Other Unofficial Implementations
+
+- [Keras tutorial](https://keras.io/examples/vision/masked_image_modeling/) by [Aritra Roy Gosthipaty](https://github.com/ariG23498) and [Sayak Paul](https://github.com/sayakpaul)
+
 ### License
 
 This project is under the CC-BY-NC 4.0 license. See [LICENSE](LICENSE) for details.
