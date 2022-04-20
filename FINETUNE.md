@@ -49,7 +49,7 @@ This should give:
 
 Evaluate ViT-Huge:
 ```
-python main_finetune.py --eval --resume mae_finetuned_vit_huge.pth --model vit_huge_patch16 --batch_size 16 --data_path ${IMAGENET_DIR}
+python main_finetune.py --eval --resume mae_finetuned_vit_huge.pth --model vit_huge_patch14 --batch_size 16 --data_path ${IMAGENET_DIR}
 ```
 This should give:
 ```

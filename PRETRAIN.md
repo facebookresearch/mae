@@ -5,6 +5,7 @@ To pre-train ViT-Large (recommended default) with **multi-node distributed train
 python submitit_pretrain.py \
     --job_dir ${JOB_DIR} \
     --nodes 8 \
+    --use_volta32 \
     --batch_size 64 \
     --model mae_vit_large_patch16 \
     --norm_pix_loss \
