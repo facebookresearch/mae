@@ -13,6 +13,7 @@ import sys
 from typing import Iterable
 
 import torch
+import torchvision.utils
 
 import util.misc as misc
 import util.lr_sched as lr_sched
@@ -45,7 +46,7 @@ def train_one_epoch(model: torch.nn.Module,
         samples = samples.to(device, non_blocking=True)
 
         with torch.cuda.amp.autocast():
-            loss, _, _ = model(samples, mask_ratio=args.mask_ratio)
+            loss, pred, mask = model(samples, mask_ratio=args.mask_ratio)
 
         loss_value = loss.item()
 
@@ -59,7 +60,7 @@ def train_one_epoch(model: torch.nn.Module,
         if (data_iter_step + 1) % accum_iter == 0:
             optimizer.zero_grad()
 
-        torch.cuda.synchronize()
+        torch.cuda.synchronize(device=args.device)
 
         metric_logger.update(loss=loss_value)
 
@@ -74,6 +75,19 @@ def train_one_epoch(model: torch.nn.Module,
             epoch_1000x = int((data_iter_step / len(data_loader) + epoch) * 1000)
             log_writer.add_scalar('train_loss', loss_value_reduce, epoch_1000x)
             log_writer.add_scalar('lr', lr, epoch_1000x)
+            if data_iter_step % (accum_iter*1000-1) == 0:
+                num_samples = min((9, samples.shape[0])) # no need to plot whole minibatch
+                x = torchvision.utils.make_grid(samples[:num_samples], nrow=3, normalize=True)
+                pred = model.unpatchify(pred.detach())
+                y = torchvision.utils.make_grid(pred[:num_samples], nrow=3, normalize=True)
+                mask = mask.detach()
+                mask = mask.unsqueeze(-1).repeat(1, 1, model.patch_embed.patch_size[0]**2 *3)  # (N, H*W, p*p*3)
+                mask = model.unpatchify(mask)  # 1 is removing, 0 is keeping
+                x_masked = samples[:num_samples] * (1 - mask[:num_samples])
+                x_masked = torchvision.utils.make_grid(x_masked, nrow=3, normalize=True)
+                log_writer.add_image('sample_x', x, epoch_1000x)
+                log_writer.add_image('sample_x_masked', x_masked, epoch_1000x)
+                log_writer.add_image('sample_pred', y, epoch_1000x)
 
 
     # gather the stats from all processes
