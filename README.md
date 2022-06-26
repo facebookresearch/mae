@@ -27,6 +27,10 @@ This is a PyTorch/GPU re-implementation of the paper [Masked Autoencoders Are Sc
 - [x] Pre-trained checkpoints + fine-tuning code
 - [x] Pre-training code
 
+### Research Poster Lightning App
+
+Research Poster created with [Lightning App ⚡️](https://lightning.ai). Try out poster, paper, notebook demo and Gradio within a single app. Try it out [here](https://lightning.ai/app/vIhhJY3YBA-CVPR%20Masked%20Autoencoders).
+
 ### Visualization demo
 
 Run our interactive visualization demo using [Colab notebook](https://colab.research.google.com/github/facebookresearch/mae/blob/main/demo/mae_visualize.ipynb) (no GPU needed):
