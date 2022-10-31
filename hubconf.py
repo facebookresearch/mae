@@ -1,5 +1,4 @@
 import torch
-from torchvision.models.resnet import resnet50
 
 import models_mae
 
@@ -14,7 +13,7 @@ def mae_vitb(pretrained=True, **kwargs):
             url="https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth",
             map_location="cpu",
         )
-        model.load_state_dict(state_dict, strict=True)
+        model.load_state_dict(state_dict, strict=False)
     return model
 
 
@@ -26,7 +25,7 @@ def mae_vitl(pretrained=True, **kwargs):
             url="https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_large.pth",
             map_location="cpu",
         )
-        model.load_state_dict(state_dict, strict=True)
+        model.load_state_dict(state_dict, strict=False)
     return model
 
 
@@ -38,5 +37,5 @@ def mae_vith(pretrained=True, **kwargs):
             url="https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_huge.pth",
             map_location="cpu",
         )
-        model.load_state_dict(state_dict, strict=True)
+        model.load_state_dict(state_dict, strict=False)
     return model
