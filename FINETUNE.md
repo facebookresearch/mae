@@ -58,7 +58,7 @@ This should give:
 
 ### Fine-tuning
 
-Get our pre-trained checkpoints from [here](https://github.com/fairinternal/mae/#pre-trained-checkpoints).
+Get our pre-trained checkpoints from [here](https://github.com/facebookresearch/mae/#fine-tuning-with-pre-trained-checkpoints).
 
 To fine-tune with **multi-node distributed training**, run the following on 4 nodes with 8 GPUs each:
 ```
