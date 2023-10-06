@@ -15,16 +15,17 @@ import numpy as np
 import os
 import time
 from pathlib import Path
-
+import torch.nn as nn
 import torch
 import torch.backends.cudnn as cudnn
 from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms as transforms
-import torchvision.datasets as datasets
-
+from torchvision import datasets
+import wandb
+import argparse
 import timm
 
-assert timm.__version__ == "0.3.2"  # version check
+assert timm.__version__ == "0.4.5"  # version check
 import timm.optim.optim_factory as optim_factory
 
 import util.misc as misc
@@ -34,17 +35,29 @@ import models_mae
 
 from engine_pretrain import train_one_epoch
 
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="MAE_ViT_Tiny",
+    entity="amccbn",
+    group="MAE_ViT_Base",
+    # track hyperparameters and run metadata
+    config={
+    "architecture": "Self_Supervised_pretrained_ViT_Base",
+    "dataset": "ADE2016",
+    "epochs": 800,
+    }
+)
 
 def get_args_parser():
     parser = argparse.ArgumentParser('MAE pre-training', add_help=False)
-    parser.add_argument('--batch_size', default=4, type=int,
+    parser.add_argument('--batch_size', default=64, type=int,
                         help='Batch size per GPU (effective batch size is batch_size * accum_iter * # gpus')
     parser.add_argument('--epochs', default=400, type=int)
     parser.add_argument('--accum_iter', default=1, type=int,
                         help='Accumulate gradient iterations (for increasing the effective batch size under memory constraints)')
 
     # Model parameters
-    parser.add_argument('--model', default='mae_vit_base_patch16', type=str, metavar='MODEL',
+    parser.add_argument('--model', default='mae_vit_large_patch16', type=str, metavar='MODEL',
                         help='Name of model to train')
 
     parser.add_argument('--input_size', default=224, type=int,
@@ -72,7 +85,7 @@ def get_args_parser():
                         help='epochs to warmup LR')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='./data/imagenet-r/', type=str,
+    parser.add_argument('--data_path', default='./ADEChallengeData2016/images/train', type=str,
                         help='dataset path')
 
     parser.add_argument('--output_dir', default='./output_dir',
@@ -87,14 +100,13 @@ def get_args_parser():
 
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
                         help='start epoch')
-    parser.add_argument('--num_workers', default=10, type=int)
+    parser.add_argument('--num_workers', default=0, type=int)
     parser.add_argument('--pin_mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem')
     parser.set_defaults(pin_mem=True)
 
     # distributed training parameters
-    parser.add_argument('distributed', action='store_false')
     parser.add_argument('--world_size', default=1, type=int,
                         help='number of distributed processes')
     parser.add_argument('--local_rank', default=-1, type=int)
@@ -106,8 +118,7 @@ def get_args_parser():
 
 
 def main(args):
-    if args.distributed:
-        misc.init_distributed_mode(args)
+    misc.init_distributed_mode(args)
 
     print('distributed: {}'.format(args.distributed))
     print('job dir: {}'.format(os.path.dirname(os.path.realpath(__file__))))
@@ -121,7 +132,8 @@ def main(args):
     np.random.seed(seed)
 
     cudnn.benchmark = True
-
+    
+    
     # simple augmentation
     transform_train = transforms.Compose([
             transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
@@ -157,7 +169,7 @@ def main(args):
     
     # define the model
     model = models_mae.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
-
+    
     model.to(device)
 
     model_without_ddp = model
@@ -175,7 +187,7 @@ def main(args):
     print("effective batch size: %d" % eff_batch_size)
 
     if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=False)
         model_without_ddp = model.module
     
     # following timm: set wd as 0 for bias and norm layers
@@ -204,7 +216,9 @@ def main(args):
 
         log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
                         'epoch': epoch,}
-
+        
+        wandb.log({**{f'train_{k}': v for k, v in train_stats.items()}})
+        
         if args.output_dir and misc.is_main_process():
             if log_writer is not None:
                 log_writer.flush()

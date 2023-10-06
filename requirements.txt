@@ -1,1 +1,3 @@
-timm==0.3.2
+timm==0.4.5
+wandb
+tensorboard
