@@ -39,15 +39,14 @@ wandb.init(
     # set the wandb project where this run will be logged
     project="MAE_ViT_Tiny",
     entity="amccbn",
-    group="MAE_ViT_Base",
+    group="MAE_ViT_Base_QCA",
     # track hyperparameters and run metadata
     config={
-    "architecture": "Self_Supervised_pretrained_ViT_Base",
-    "dataset": "ADE2016",
-    "epochs": 800,
+    "architecture": "Self_Supervised_pretrained_ViT_Base_QCA",
+    "dataset": "QCA",
+    "epochs": 50,
     }
 )
-
 def get_args_parser():
     parser = argparse.ArgumentParser('MAE pre-training', add_help=False)
     parser.add_argument('--batch_size', default=64, type=int,

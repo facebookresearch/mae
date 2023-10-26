@@ -1,10 +1,13 @@
 data/
 output_dir/
-*.jpg
-*.jpeg
-*.png
-*.gif
+QCA_data/
 __pycache__/
 wandb/
 ADEChallengeData2016.zip
 ADEChallengeData2016/
+nohup.out
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.zip
