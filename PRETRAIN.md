@@ -15,6 +15,17 @@ python submitit_pretrain.py \
     --blr 1.5e-4 --weight_decay 0.05 \
     --data_path ${IMAGENET_DIR}
 ```
+
+```
+CUDA_VISIBLE_DEVICES=0,1 OMP_NUM_THREADS=1 python -m torch.distributed.launch --nproc_per_node=2 main_pretrain.py \
+--batch_size 128 \
+--accum_iter 16 \
+--model mae_vit_base_patch16 \
+--mask_ratio 0.75 \
+--epochs 800 \
+--warmup_epochs 40 \
+--blr 1.5e-4 --weight_decay 0.05
+```
 - Here the effective batch size is 64 (`batch_size` per gpu) * 8 (`nodes`) * 8 (gpus per node) = 4096. If memory or # gpus is limited, use `--accum_iter` to maintain the effective batch size, which is `batch_size` (per gpu) * `nodes` * 8 (gpus per node) * `accum_iter`.
 - `blr` is the base learning rate. The actual `lr` is computed by the [linear scaling rule](https://arxiv.org/abs/1706.02677): `lr` = `blr` * effective batch size / 256.
 - Here we use `--norm_pix_loss` as the target for better representation learning. To train a baseline model (e.g., for visualization), use pixel-based construction and turn off `--norm_pix_loss`.
