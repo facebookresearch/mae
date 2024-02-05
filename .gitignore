@@ -11,3 +11,4 @@ nohup.out
 *.png
 *.gif
 *.zip
+*.pth
