@@ -22,8 +22,9 @@ import torch.backends.cudnn as cudnn
 from torch.utils.tensorboard import SummaryWriter
 
 import timm
+import wandb
 
-assert timm.__version__ == "0.3.2" # version check
+assert timm.__version__ == "0.4.5" # version check
 from timm.models.layers import trunc_normal_
 from timm.data.mixup import Mixup
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
@@ -37,6 +38,19 @@ from util.misc import NativeScalerWithGradNormCount as NativeScaler
 import models_vit
 
 from engine_finetune import train_one_epoch, evaluate
+
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="MAE_ViT_Tiny",
+    entity="amccbn",
+    group="MAE_ViT_Base",
+    # track hyperparameters and run metadata
+    config={
+    "architecture": "Self_Supervised_pretrained_FineTunning_ViT_Base",
+    "dataset": "ADE2016",
+    "epochs": 200,
+    }
+)
 
 
 def get_args_parser():
@@ -336,6 +350,9 @@ def main(args):
                         **{f'test_{k}': v for k, v in test_stats.items()},
                         'epoch': epoch,
                         'n_parameters': n_parameters}
+        wandb.log({**{f'train_{k}': v for k, v in train_stats.items()},
+                   **{f'test_{k}': v for k, v in test_stats.items()}
+                   })
 
         if args.output_dir and misc.is_main_process():
             if log_writer is not None:

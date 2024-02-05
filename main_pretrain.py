@@ -15,16 +15,17 @@ import numpy as np
 import os
 import time
 from pathlib import Path
-
+import torch.nn as nn
 import torch
 import torch.backends.cudnn as cudnn
 from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms as transforms
-import torchvision.datasets as datasets
-
+from torchvision import datasets
+import wandb
+import argparse
 import timm
 
-assert timm.__version__ == "0.3.2"  # version check
+assert timm.__version__ == "0.4.5"  # version check
 import timm.optim.optim_factory as optim_factory
 
 import util.misc as misc
@@ -34,7 +35,18 @@ import models_mae
 
 from engine_pretrain import train_one_epoch
 
-
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="MAE_ViT_Tiny",
+    entity="amccbn",
+    group="MAE_ViT_Base_QCA",
+    # track hyperparameters and run metadata
+    config={
+    "architecture": "Self_Supervised_pretrained_ViT_Base_QCA",
+    "dataset": "QCA",
+    "epochs": 50,
+    }
+)
 def get_args_parser():
     parser = argparse.ArgumentParser('MAE pre-training', add_help=False)
     parser.add_argument('--batch_size', default=64, type=int,
@@ -72,7 +84,7 @@ def get_args_parser():
                         help='epochs to warmup LR')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/datasets01/imagenet_full_size/061417/', type=str,
+    parser.add_argument('--data_path', default='./ADEChallengeData2016/images/train', type=str,
                         help='dataset path')
 
     parser.add_argument('--output_dir', default='./output_dir',
@@ -87,7 +99,7 @@ def get_args_parser():
 
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
                         help='start epoch')
-    parser.add_argument('--num_workers', default=10, type=int)
+    parser.add_argument('--num_workers', default=0, type=int)
     parser.add_argument('--pin_mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem')
@@ -107,6 +119,7 @@ def get_args_parser():
 def main(args):
     misc.init_distributed_mode(args)
 
+    print('distributed: {}'.format(args.distributed))
     print('job dir: {}'.format(os.path.dirname(os.path.realpath(__file__))))
     print("{}".format(args).replace(', ', ',\n'))
 
@@ -118,14 +131,15 @@ def main(args):
     np.random.seed(seed)
 
     cudnn.benchmark = True
-
+    
+    
     # simple augmentation
     transform_train = transforms.Compose([
             transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
+    dataset_train = datasets.ImageFolder(os.path.join(args.data_path), transform=transform_train)
     print(dataset_train)
 
     if True:  # args.distributed:
@@ -154,7 +168,7 @@ def main(args):
     
     # define the model
     model = models_mae.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
-
+    
     model.to(device)
 
     model_without_ddp = model
@@ -172,7 +186,7 @@ def main(args):
     print("effective batch size: %d" % eff_batch_size)
 
     if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=False)
         model_without_ddp = model.module
     
     # following timm: set wd as 0 for bias and norm layers
@@ -201,7 +215,9 @@ def main(args):
 
         log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
                         'epoch': epoch,}
-
+        
+        wandb.log({**{f'train_{k}': v for k, v in train_stats.items()}})
+        
         if args.output_dir and misc.is_main_process():
             if log_writer is not None:
                 log_writer.flush()
