@@ -6,7 +6,7 @@ class SpreadMasking:
     '''
         Class to spread the mask
     '''
-    def __init__(self, mask_ratio, interpolate_ratio=0.8): 
+    def __init__(self, mask_ratio, interpolate_ratio=0.5): 
         self.mask_ratio = mask_ratio
         self.interpolate_ratio = interpolate_ratio 
     
@@ -33,14 +33,9 @@ class SpreadMasking:
 
         if len(binary_tensors.size()) != 4:
             binary_tensors = binary_tensors.unsqueeze(0)
+        self.mask_ratio = -1
         if self.mask_ratio == -1:
-            mask_positions = torch.nonzero(binary_tensors == 1, as_tuple=False).squeeze()
-            number_of_mask = int(mask_positions.size(0) * self.interpolate_ratio)
-            mask_positions = self.shuffle(mask_positions)
-            mask_positions = mask_positions[:number_of_mask]
-            output_tensors = torch.zeros_like(binary_tensors, dtype=torch.float32)
-            output_tensors = self.mask_value(output_tensors, mask_positions, 1.0)
-            return output_tensors
+            return binary_tensors
         else:
             _, channels, height, width = binary_tensors.shape
 

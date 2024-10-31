@@ -164,3 +164,4 @@ cython_debug/
 checkpoints/
 .vscode/
 outputs/
+demo/example
